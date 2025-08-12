@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+        :root {
+            --bg-color: #1a1a2e;
+            --primary-color: #0f3460;
+            --secondary-color: #e94560;
+            --text-color: #e0e0e0;
+            --cell-x-color: #ffc400;
+            --cell-o-color: #3b91ff;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .container {
+            background-color: var(--primary-color);
+            padding: 2.5rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 2px 2px var(--bg-color);
+        }
+        
+        .status-area {
+            font-size: 1.5rem;
+            height: 2rem;
+            font-weight: 600;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 10px;
+            background-color: var(--primary-color);
+            border-radius: 10px;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+            user-select: none;
+        }
+
+        .cell:hover {
+            transform: scale(1.05);
+            background-color: #2e2e4e;
+        }
+
+        .cell.x {
+            color: var(--cell-x-color);
+        }
+
+        .cell.o {
+            color: var(--cell-o-color);
+        }
+        
+        .cell.winner-cell {
+            background-color: var(--secondary-color);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        button {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            background-color: #f75574;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem;
+                gap: 1.5rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .status-area {
+                font-size: 1.2rem;
+            }
+            .game-board {
+                grid-template-columns: repeat(3, 80px);
+                grid-template-rows: repeat(3, 80px);
+                gap: 8px;
+            }
+            .cell {
+                width: 80px;
+                height: 80px;
+                font-size: 3rem;
+            }
+            button {
+                padding: 0.8rem 1.6rem;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Tic-Tac-Toe</h1>
+        <div class="status-area">It's X's turn!</div>
+        <div class="game-board" id="gameBoard">
+            <div class="cell" data-cell-index="0"></div>
+            <div class="cell" data-cell-index="1"></div>
+            <div class="cell" data-cell-index="2"></div>
+            <div class="cell" data-cell-index="3"></div>
+            <div class="cell" data-cell-index="4"></div>
+            <div class="cell" data-cell-index="5"></div>
+            <div class="cell" data-cell-index="6"></div>
+            <div class="cell" data-cell-index="7"></div>
+            <div class="cell" data-cell-index="8"></div>
+        </div>
+        <button id="restartButton">Restart Game</button>
+    </div>
+
+    <script>
+        // Game State Variables
+        let boardState = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = "X";
+        let gameActive = true;
+
+        // HTML Elements
+        const statusDisplay = document.querySelector('.status-area');
+        const cells = document.querySelectorAll('.cell');
+        const restartButton = document.getElementById('restartButton');
+
+        // Winning Conditions
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]            // Diagonals
+        ];
+
+        // Messages
+        const currentPlayerTurn = () => `It's ${currentPlayer}'s turn!`;
+        const winningMessage = () => `Player ${currentPlayer} has won!`;
+        const drawMessage = () => `Game ended in a draw!`;
+
+        // Initial status display
+        statusDisplay.innerHTML = currentPlayerTurn();
+
+        // Handles a cell click
+        function handleCellClick(clickedCellEvent) {
+            const clickedCell = clickedCellEvent.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
+
+            // Check if the cell is already played or the game is not active
+            if (boardState[clickedCellIndex] !== "" || !gameActive) {
+                return;
+            }
+
+            // Update the game state and display
+            handlePlayerChange(clickedCell, clickedCellIndex);
+            checkResult();
+        }
+
+        // Handles changing the player and updating the board
+        function handlePlayerChange(clickedCell, clickedCellIndex) {
+            boardState[clickedCellIndex] = currentPlayer;
+            clickedCell.innerHTML = currentPlayer;
+            clickedCell.classList.add(currentPlayer.toLowerCase());
+        }
+
+        // Checks for a winner or a draw
+        function checkResult() {
+            let roundWon = false;
+            let winningCells = [];
+
+            // Iterate through all winning conditions
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = boardState[winCondition[0]];
+                let b = boardState[winCondition[1]];
+                let c = boardState[winCondition[2]];
+
+                // If any cell is empty, continue to the next condition
+                if (a === "" || b === "" || c === "") {
+                    continue;
+                }
+                // If all three cells are the same, we have a winner
+                if (a === b && b === c) {
+                    roundWon = true;
+                    winningCells = winCondition;
+                    break;
+                }
+            }
+
+            // If a winner is found
+            if (roundWon) {
+                statusDisplay.innerHTML = winningMessage();
+                gameActive = false;
+                highlightWinningCells(winningCells);
+                return;
+            }
+
+            // If no winner, check for a draw
+            let roundDraw = !boardState.includes("");
+            if (roundDraw) {
+                statusDisplay.innerHTML = drawMessage();
+                gameActive = false;
+                return;
+            }
+
+            // If no winner or draw, switch players
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            statusDisplay.innerHTML = currentPlayerTurn();
+        }
+
+        // Highlights the winning cells
+        function highlightWinningCells(winningCells) {
+            winningCells.forEach(index => {
+                cells[index].classList.add('winner-cell');
+            });
+        }
+
+        // Restarts the game
+        function handleRestartGame() {
+            gameActive = true;
+            currentPlayer = "X";
+            boardState = ["", "", "", "", "", "", "", "", ""];
+            statusDisplay.innerHTML = currentPlayerTurn();
+            
+            cells.forEach(cell => {
+                cell.innerHTML = "";
+                cell.classList.remove('x', 'o', 'winner-cell');
+            });
+        }
+
+        // Event Listeners
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        restartButton.addEventListener('click', handleRestartGame);
+
+    </script>
+</body>
+</html>
